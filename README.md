@@ -1,5 +1,8 @@
 # web-crawler : first web mining project.
 
+## Author
+
+- [Cyrille NEBANGA](https://github.com/odi77)
 
 
 ## Quick start
