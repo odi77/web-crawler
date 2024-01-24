@@ -23,7 +23,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
-Before lanching the crawler, you should create an `.env` file containing the default values:
+Before launching the crawler, you should create an `.env` file containing the default values:
 ```
 URL = https://ensai.fr/
 MAX_URL = 50
