@@ -1,1 +1,32 @@
-# web-crawler
+# web-crawler : first web mining project.
+
+
+
+## Quick start
+
+First, you will need to clone the repository.
+```bash
+git clone https://github.com/odi77/web-crawler.git
+cd web-crawler
+```
+
+Then, we will set a virtual environment and download the necessary packages.
+```python
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+Before lanching the crawler, you should create an `.env` file containing the default values:
+```
+URL = https://ensai.fr/
+MAX_URL = 50
+```
+
+Finally, to launch the crawler there are several options:
+```python
+# to get some help
+python3 main.py --help
+# with default parameters
+python3 main.py
+# with specified parameters
+python3 main.py --start_point "https://www.ensae.fr/" --max_url 100
