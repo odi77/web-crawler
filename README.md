@@ -1,6 +1,10 @@
-# web-crawler : first web mining project.
+# ThreadCraft : Multithreaded Web Crawler".
 
-## Author
+**ThreadCraft** is a web crawler app designed as part of Web mining class projects.
+The project involves creating a single-threaded web crawler. The crawler starts from a specified URL (https://ensai.fr/) and downloads web pages, waiting at least five seconds before proceeding to the next page. It explores additional pages by analyzing link tags in previously visited documents, stopping exploration after encountering 5 links per page or reaching a total of 50 URLs. The program concludes by writing all discovered URLs to a file named crawled_webpages.txt
+
+
+### Author
 
 - [Cyrille NEBANGA](https://github.com/odi77)
 
