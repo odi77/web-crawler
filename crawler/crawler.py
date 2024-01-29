@@ -9,35 +9,94 @@ from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
 from usp.tree import sitemap_tree_for_homepage
 import validators
+
+# Load environment variables from .env file
 load_dotenv()
 
 
 
-
+# Set up logging configuration
 logging.basicConfig(
     format='%(asctime)s %(levelname)s:%(message)s',
     level=logging.INFO)
 
 
+# Utility class for creating the final document
+
 class Utils:
+    '''
+    Utility class for common functions.
+
+    Methods:
+        - write_txt_file(path, document): Write a document to a text file.
+
+    Example Usage:
+        utils = Utils()
+        utils.write_txt_file("example.txt", ["line 1", "line 2"])
+    '''
     def __init__(self) -> None:
         pass
 
     def write_txt_file(self, path, document):
+        '''
+        Write a document to a text file.
+
+        Parameters:
+            - path (str): The file path where the document will be written.
+            - document (list): List of lines to be written to the file.
+
+        Example Usage:
+            utils = Utils()
+            utils.write_txt_file("example.txt", ["line 1", "line 2"])
+
+        '''
+        # Open the file in write mode
         file = open(path, 'w')
+
+        # Write each line in the document to the file
         for line in document:
             file.write(line + os.linesep)
         file.close()
 
 
 class Crawler:
+    '''
+    Web Crawler class for extracting and processing URLs.
 
-    def __init__(
-        self,
-        urls=[],
-        max_url=os.environ.get("MAX_URL"),
-        wait_time=5
-    ):
+    Attributes:
+        - __visited_urls (list): List of visited URLs.
+        - __visited_sitemaps (list): List of visited sitemaps.
+        - __crawled_urls (list): List of crawled URLs.
+        - __urls_to_visit (list): List of URLs scheduled for visit.
+        - __MAX_URL (int): Maximum allowed URLs to crawl.
+        - wait_time (int): Wait time between consecutive requests.
+        - homepage_fail (int): Counter for failures related to homepage retrieval.
+        - sitemap_fail (int): Counter for failures related to sitemap processing.
+        - crawl_fail (int): Counter for general crawling failures.
+
+    Methods:
+        - get_visited_urls(): Get the list of visited URLs.
+        - get_crawled_urls(): Get the list of crawled URLs.
+        - get_urls_to_visit: Get the temporary list of all links found on a given page
+        - get_visited_sitemaps: Get the list of all sitemaps that have been visited
+        - get_html_from_url: Get the HTML content of a web page for a given URL.
+        - get_linked_urls: Get all the links in a HTML page.
+        - add_crawled_urls: Add a link to the list of crawled URLs if it is not already present
+        - add_url_to_visit: Add a link to the list of URLs to visit if it is not already visited or scheduled for visit
+        - get_sitemap_from_url : Get sitemap URLs from a given URL and schedule them for crawling
+        - is_crawlable: Check if a URL can be crawled or not
+        - get_homepage_url: Get the homepage url from an url
+        - is_valid_url : Check if the url is valid
+        - crawl : Add links that are valid to the crawlable list and linked URLS to __urls_to_visit list
+            + rule of politeness
+        - run: Performs the crawling
+        - get_crawler_statistics: Get a string containing information about the crawling
+
+    '''
+
+    def __init__(self, urls=[], max_url=os.environ.get("MAX_URL"), wait_time=5):
+
+        # Initialize lists to store visited URLs, sitemaps, and crawled URLs
         self.__visited_urls = []
         self.__visited_sitemaps = []
         self.__crawled_urls = []
@@ -50,33 +109,48 @@ class Crawler:
         self.sitemap_fail = 0
         self.crawl_fail = 0
 
+
     def get_visited_urls(self):
         '''
         Returns the list of all the links that have been visited
         '''
         return self.__visited_urls
+    
 
     def get_crawled_urls(self):
         '''
         Returns the list of all the urls that can be crawled
         '''
         return self.__crawled_urls
+    
 
     def get_urls_to_visit(self):
         '''
         Returns the temporary list of all links found on a given page
         '''
         return self.__urls_to_visit
+    
 
     def get_visited_sitemaps(self):
         '''
         Returns the list of all sitemaps that have been visited
         '''
         return self.__visited_sitemaps
+    
 
     def get_html_from_url(self, url):
         '''
-        Gets the text of the web page for a given URL
+        Retrieve the HTML content of a web page for a given URL.
+
+        Parameters:
+            - url (str): The URL of the web page.
+
+        Returns:
+            str: The HTML content of the web page.
+
+        Raises:
+            Exception: If there is an issue retrieving the HTML content, a log entry is created,
+                   and the 'homepage_fail' counter is incremented.
         '''
         try:
             return requests.get(url).text
@@ -84,9 +158,17 @@ class Crawler:
             logging.exception(f'URL {url} not found')
             self.homepage_fail += 1
 
+
     def get_linked_urls(self, url, html):
         '''
-        Find all the links in a HTML page
+        Find all the links in a HTML page.
+
+        Parameters:
+            - url (str): The base URL of the HTML page.
+            - html (str): The HTML content of the page.
+
+        Returns:
+            list: A list containing all the linked URLs found in the HTML page.
         '''
         soup = BeautifulSoup(html, 'html.parser')
         links = list()
@@ -96,41 +178,94 @@ class Crawler:
                 path = urljoin(url, path)
                 links.append(path)
         return links
+    
 
     def add_crawled_urls(self, url):
         '''
-        Add a link to the list of crawled URLs if not already in it.
+        Add a link to the list of crawled URLs if it is not already present.
+
+        Parameters:
+            - url (str): The URL to be added to the list.
+
+        Notes:
+            If the provided URL is already in the list of crawled URLs, it will not be added again.
         '''
         if url not in self.__crawled_urls:
             self.__crawled_urls.append(url)
 
+
     def add_url_to_visit(self, url):
+        '''
+        Add a link to the list of URLs to visit if it is not already visited or scheduled for visit.
+
+        Parameters:
+            - url (str): The URL to be added to the list.
+
+        Notes:
+            If the provided URL is already in the list of visited URLs or scheduled for visit,
+            it will not be added again.
+        '''
         if url not in self.__visited_urls and url not in self.__urls_to_visit:
             self.__urls_to_visit.append(url)
 
+
     def get_sitemap_from_url(self, url):
+        '''
+        Retrieve sitemap URLs from a given URL and schedule them for crawling.
+
+        Parameters:
+            - url (str): The URL to extract sitemap URLs from.
+
+        Notes:
+            - The function extracts the homepage URL from the provided URL.
+            - If the homepage URL is not already in the list of visited sitemaps,
+            it retrieves the sitemap tree for the homepage and schedules all sitemap URLs for visit.
+            - The visited sitemap is then added to the list to avoid redundant processing.
+
+        '''
+        # Get the homepage URL from the provided URL
         homepage = self.get_homepage_url(url)
+
+        # Check if the homepage is not already in the list of visited sitemaps
         if homepage not in self.__visited_sitemaps:
+
+            # Retrieve the sitemap tree for the homepage
             sitemap_tree = sitemap_tree_for_homepage(homepage_url=homepage)
+
+            # Schedule all sitemap URLs for visit
             for page in sitemap_tree.all_pages():
                 self.add_url_to_visit(page.url)
+
+            # Add the visited sitemap to the list to avoid redundant processing
             self.__visited_sitemaps.append(homepage)
+
 
     @staticmethod
     def is_crawlable(url):
         '''
-        Check if a url can be crawled or not
+        Check if a URL can be crawled or not.
 
-        Returns
-        -------
-        bool : True if the url can be crawled, False if not.
+        Parameters:
+            - url (str): The URL to be checked for crawlability.
+
+        Returns:
+            bool: True if the URL can be crawled, False if not.
         '''
+        # Create a RobotFileParser instance
         rp = RobotFileParser()
+
+        # Extract the scheme and domain from the URL
         scheme = urlparse(url).scheme
         domain = urlparse(url).netloc
+
+        # Create the robots.txt URL for the given domain
         link = scheme + "://" + domain + "/robots.txt"
+
+        # Set the URL for the RobotFileParser instance and read the robots.txt file
         rp.set_url(link)
         rp.read()
+
+        # Check if the URL can be fetched based on the robots.txt rules
         return rp.can_fetch("*", url)
 
     @staticmethod
