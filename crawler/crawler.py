@@ -10,6 +10,7 @@ from urllib.robotparser import RobotFileParser
 from usp.tree import sitemap_tree_for_homepage
 import validators
 
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -95,6 +96,14 @@ class Crawler:
     '''
 
     def __init__(self, urls=[], max_url=os.environ.get("MAX_URL"), wait_time=5):
+        '''
+        Initialize the Crawler instance with default or provided values.
+
+        Parameters:
+            - urls (list): List of initial URLs to start crawling.
+            - max_url (int): Maximum allowed URLs to crawl.
+            - wait_time (int): Wait time between consecutive requests.
+        '''
 
         # Initialize lists to store visited URLs, sitemaps, and crawled URLs
         self.__visited_urls = []
@@ -293,11 +302,13 @@ class Crawler:
         '''
         return validators.url(str(url))
 
+
     def crawl(self, url, wait_time):
         '''
         Add links that are valid to the crawlable list and linked URLS to __urls_to_visit list
         + rule of politeness
         '''
+
         # add to crawled URLs if it is a valid URL
         is_valid = self.is_valid_url(url)
         if is_valid:
